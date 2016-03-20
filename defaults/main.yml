@@ -1,22 +1,15 @@
 ---
-# defaults file for PostgreSQL
-
 # Basic settings
-postgresql_version: 9.3
 postgresql_encoding: 'UTF-8'
 postgresql_locale: 'en_US.UTF-8'
-
-# PostgreSQL Repo File
-pgsql_repo: "http://yum.postgresql.org/{{ postgresql_version }}/redhat/rhel-{{ ansible_distribution_major_version }}-x86_64/pgdg-redhat{{ postgresql_version|replace('.', '') }}-{{ postgresql_version }}-1.noarch.rpm"
 
 postgresql_admin_user: "postgres"
 socket_postgresql_default_auth_method: "trust"
 ipv4_postgresql_default_auth_method: "trust"
 ipv6_postgresql_default_auth_method: "trust"
 
-postgresql_cluster_name: "data"
-postgresql_cluster_reset: false          # true or false
-
+# DANGEROUS, will wipe data and re-create everything from scratch
+postgresql_reset_data: false
 
 # List of databases to be created (optional)
 postgresql_databases: []                # Override when needed, usage as shown below
@@ -62,15 +55,16 @@ postgresql_pg_hba_custom: []
 #------------------------------------------------------------------------------
 
 # Location of postgres configuration files here
-postgresql_conf_directory: "/var/lib/pgsql/{{postgresql_version}}/{{postgresql_cluster_name}}"
+postgresql_conf_directory: "/var/lib/pgsql/data/"
+# data directory is the same as conf directory (same is the OS defaults)
+postgresql_data_directory: "{{postgresql_conf_directory}}"
+
+# Config
+postgresql_config_file: "{{postgresql_conf_directory}}/postgresql.conf"
 # HBA (Host Based Authentication) file
 postgresql_hba_file: "{{postgresql_conf_directory}}/pg_hba.conf"
 # Ident configuration file
 postgresql_ident_file: "{{postgresql_conf_directory}}/pg_ident.conf"
-# Use data in another directory
-postgresql_data_directory: "/var/lib/pgsql/{{postgresql_version}}/{{postgresql_cluster_name}}"
-# If external_pid_file is not explicitly set, on extra PID file is written
-postgresql_external_pid_file: "/var/run/{{postgresql_version}}-{{postgresql_cluster_name}}.pid"
 
 #------------------------------------------------------------------------------
 # CONNECTIONS AND AUTHENTICATION
@@ -83,7 +77,7 @@ postgresql_port: 5432
 postgresql_max_connections: 100
 postgresql_superuser_reserved_connections: 3
 
-postgresql_unix_socket_directories: '/tmp'
+postgresql_unix_socket_directory: '/var/run/postgresql/'
 postgresql_unix_socket_group: ''
 postgresql_unix_socket_permissions: '0777' # begin with 0 to use octal notation
 
@@ -114,8 +108,8 @@ postgresql_password_encryption: on
 postgresql_db_user_namespace: off
 
 # Kerberos and GSSAPI
+postgresql_krb: false
 postgresql_krb_server_keyfile: ''
-postgresql_krb_srvname: postgres
 postgresql_krb_caseins_users: off
 
 # TCP Keepalives, 0 selects the system default (in seconds)
@@ -130,6 +124,10 @@ postgresql_tcp_keepalives_count: 0
 
 # - Memory -
 
+# adjust kernel's shared memory max
+postgresql_adjust_shm: true
+postgresql_adjust_shm_value: 8589934592 # 8GB
+
 postgresql_shared_buffers:       128MB # min 128kB
 postgresql_temp_buffers:         8MB   # min 800kB
 
@@ -139,8 +137,8 @@ postgresql_temp_buffers:         8MB   # min 800kB
 # actively intend to use prepared transactions.
 postgresql_max_prepared_transactions: 0 # zero disables the feature
 
-postgresql_work_mem:             1MB   # min 64kB
-postgresql_maintenance_work_mem: 16MB  # min 1MB
+postgresql_work_mem:             4MB   # min 64kB
+postgresql_maintenance_work_mem: 64MB  # min 1MB
 postgresql_max_stack_depth:      2MB   # min 100kB
 
 
@@ -302,7 +300,7 @@ postgresql_random_page_cost:          4.0     # same scale as above
 postgresql_cpu_tuple_cost:            0.01    # same scale as above
 postgresql_cpu_index_tuple_cost:      0.005   # same scale as above
 postgresql_cpu_operator_cost:         0.0025  # same scale as above
-postgresql_effective_cache_size:      128MB
+postgresql_effective_cache_size:      4GB
 
 
 # - Genetic Query Optimizer -
