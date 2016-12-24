@@ -6,3 +6,6 @@
 
 - name: start postgresql
   service: name=postgresql state=started
+
+- name: pass
+  service: name=postgresql state=started
